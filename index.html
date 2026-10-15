@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="RFID-Based Attendance System - Computer Networks PBL Project. A responsive blue-and-white dashboard featuring real-time RFID scanning simulation, student attendance tracking, and network architecture insights.">
+  <title>RFID-Based Attendance System | Computer Networks PBL</title>
+  
+  <!-- Google Fonts: Outfit & Inter for ultra-clean modern typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons for professional UI graphics -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" id="main-nav">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-id-card-clip"></i>
+          <span class="pulse-ring"></span>
+        </div>
+        <div class="brand-text">
+          <h1>RFID Attendance</h1>
+          <span class="badge-sub">Computer Networks PBL</span>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="nav-menu">
+        <a href="#dashboard" class="nav-link active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+        <a href="#scanner-section" class="nav-link"><i class="fa-solid fa-wifi"></i> RFID Simulator</a>
+        <a href="#records-section" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Attendance History</a>
+        <a href="#students-section" class="nav-link"><i class="fa-solid fa-users"></i> Students</a>
+        <a href="#network-section" class="nav-link"><i class="fa-solid fa-network-wired"></i> CN Architecture</a>
+      </nav>
+
+      <!-- Right Header Actions: Clock, Status, & Mark Attendance CTA -->
+      <div class="nav-actions">
+        <div class="live-clock" id="live-clock">
+          <i class="fa-regular fa-clock"></i>
+          <span id="clock-display">--:--:--</span>
+        </div>
+        <div class="network-badge online" id="network-status" title="Local Area Network Server Connected">
+          <span class="status-dot"></span>
+          <span class="status-label">LAN 192.168.1.100</span>
+        </div>
+        <button class="btn btn-primary btn-glow" id="open-scan-modal-btn">
+          <i class="fa-solid fa-barcode"></i>
+          <span>Mark Attendance</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content" id="dashboard">
+    
+    <!-- Hero / Project Context Banner -->
+    <section class="hero-banner">
+      <div class="hero-text">
+        <div class="hero-pill">
+          <i class="fa-solid fa-diagram-project"></i> Project-Based Learning (PBL) Demonstration
+        </div>
+        <h2>RFID-Based Smart Attendance Management System</h2>
+        <p>
+          Simulating real-time RFID Reader (RC522 / ESP32) packet transmission across a Local Area Network (LAN) to a centralized attendance database via TCP/IP & HTTP protocols.
+        </p>
+      </div>
+      <div class="hero-stats-badge">
+        <div class="badge-item">
+          <span class="badge-title">Protocol</span>
+          <span class="badge-val">HTTP / TCP-IP</span>
+        </div>
+        <div class="badge-divider"></div>
+        <div class="badge-item">
+          <span class="badge-title">Frequency</span>
+          <span class="badge-val">13.56 MHz RFID</span>
+        </div>
+        <div class="badge-divider"></div>
+        <div class="badge-item">
+          <span class="badge-title">Avg Latency</span>
+          <span class="badge-val" id="network-latency">8 ms</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Metrics / Stats Cards (Blue & White Design) -->
+    <section class="stats-grid">
+      <!-- Total Students -->
+      <div class="stat-card">
+        <div class="stat-icon-wrapper bg-blue-subtle">
+          <i class="fa-solid fa-user-graduate text-primary"></i>
+        </div>
+        <div class="stat-data">
+          <span class="stat-label">Total Enrolled</span>
+          <h3 class="stat-number" id="total-students-count">0</h3>
+          <span class="stat-meta text-muted">Registered in Database</span>
+        </div>
+        <div class="stat-accent-bar accent-blue"></div>
+      </div>
+
+      <!-- Present Today -->
+      <div class="stat-card">
+        <div class="stat-icon-wrapper bg-green-subtle">
+          <i class="fa-solid fa-user-check text-success"></i>
+        </div>
+        <div class="stat-data">
+          <span class="stat-label">Present Today</span>
+          <h3 class="stat-number text-success" id="present-count">0</h3>
+          <span class="stat-meta" id="present-growth"><i class="fa-solid fa-arrow-trend-up"></i> Verified by RFID</span>
+        </div>
+        <div class="stat-accent-bar accent-green"></div>
+      </div>
+
+      <!-- Absent Today -->
+      <div class="stat-card">
+        <div class="stat-icon-wrapper bg-red-subtle">
+          <i class="fa-solid fa-user-xmark text-danger"></i>
+        </div>
+        <div class="stat-data">
+          <span class="stat-label">Absent Students</span>
+          <h3 class="stat-number text-danger" id="absent-count">0</h3>
+          <span class="stat-meta text-muted">Pending swipe / Unrecorded</span>
+        </div>
+        <div class="stat-accent-bar accent-danger"></div>
+      </div>
+
+      <!-- Attendance Percentage -->
+      <div class="stat-card">
+        <div class="stat-icon-wrapper bg-cyan-subtle">
+          <i class="fa-solid fa-chart-line text-cyan"></i>
+        </div>
+        <div class="stat-data">
+          <span class="stat-label">Attendance Rate</span>
+          <h3 class="stat-number" id="attendance-rate">0%</h3>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="rate-bar" style="width: 0%;"></div>
+          </div>
+        </div>
+        <div class="stat-accent-bar accent-cyan"></div>
+      </div>
+
+      <!-- Network Packets -->
+      <div class="stat-card">
+        <div class="stat-icon-wrapper bg-indigo-subtle">
+          <i class="fa-solid fa-network-wired text-indigo"></i>
+        </div>
+        <div class="stat-data">
+          <span class="stat-label">Network Packets</span>
+          <h3 class="stat-number" id="packet-count">0</h3>
+          <span class="stat-meta text-muted"><i class="fa-solid fa-shield-halved text-success"></i> 0% Packet Loss</span>
+        </div>
+        <div class="stat-accent-bar accent-indigo"></div>
+      </div>
+    </section>
+
+    <!-- RFID Scanner Terminal & Interactive Simulation Section -->
+    <section class="scanner-section" id="scanner-section">
+      <div class="section-header">
+        <div>
+          <h2><i class="fa-solid fa-microchip text-primary"></i> RFID Card Reader & Network Simulator</h2>
+          <p>Scan an RFID card or click a demo card below to mark attendance and simulate packet transfer across the LAN.</p>
+        </div>
+        <div class="header-tools">
+          <button class="btn btn-secondary btn-sm" id="toggle-sound-btn" title="Toggle Scan Audio Chime">
+            <i class="fa-solid fa-volume-high" id="sound-icon"></i> Audio Beep: ON
+          </button>
+        </div>
+      </div>
+
+      <div class="scanner-terminal-grid">
+        <!-- Interactive RFID Scanning Simulation Terminal -->
+        <div class="reader-console-card">
+          <div class="reader-visual">
+            <div class="rfid-device" id="rfid-hardware">
+              <div class="device-status-led" id="device-led"></div>
+              <div class="rfid-waves">
+                <span class="wave wave-1"></span>
+                <span class="wave wave-2"></span>
+                <span class="wave wave-3"></span>
+              </div>
+              <div class="reader-symbol">
+                <i class="fa-solid fa-rss"></i>
+              </div>
+              <p class="reader-hint" id="reader-instruction">Ready: Enter RFID ID (e.g. STU1001) &amp; Click Scan</p>
+            </div>
+          </div>
+
+          <!-- RFID ID Input Field & Scan Button Form -->
+          <form class="scan-form" id="rfid-scan-form" onsubmit="event.preventDefault(); handleScanButtonClick();">
+            <div class="input-group">
+              <span class="input-icon"><i class="fa-solid fa-id-card-clip"></i></span>
+              <input 
+                type="text" 
+                id="rfid-id-input" 
+                placeholder="Enter RFID ID such as STU1001" 
+                autocomplete="off" 
+                spellcheck="false"
+              >
+              <button type="submit" class="btn btn-primary" id="scan-btn">
+                <i class="fa-solid fa-barcode"></i> Scan
+              </button>
+            </div>
+            <span class="input-helper"><i class="fa-solid fa-circle-info"></i> Pure JavaScript simulation &bull; Try typing <strong>STU1001</strong></span>
+          </form>
+
+          <!-- Quick Test Sample RFID IDs -->
+          <div class="demo-cards-wrapper">
+            <span class="demo-label"><i class="fa-solid fa-bolt text-warning"></i> Quick Test Sample IDs:</span>
+            <div class="demo-cards-list" id="demo-cards-list">
+              <!-- Injected by script.js -->
+            </div>
+          </div>
+
+          <!-- Live Scan Result Display Box -->
+          <div class="scan-result-container" id="scan-result-container">
+            <div class="result-placeholder" id="result-placeholder">
+              <i class="fa-solid fa-satellite-dish"></i>
+              <span>Enter an RFID ID such as <strong>STU1001</strong> above and click <strong>Scan</strong> to simulate card scan.</span>
+            </div>
+            <div class="scan-result-card" id="scan-result-card" style="display: none;">
+              <!-- Populated dynamically by script.js -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Computer Networks Packet Transmission Visualizer -->
+        <div class="network-flow-card">
+          <div class="card-top">
+            <h3><i class="fa-solid fa-tower-broadcast text-primary"></i> Packet Transmission Flow</h3>
+            <span class="badge-lan" id="live-packet-tag">STANDBY</span>
+          </div>
+          
+          <div class="packet-steps-flow">
+            <div class="flow-node" id="node-card">
+              <div class="node-icon"><i class="fa-solid fa-credit-card"></i></div>
+              <span class="node-name">RFID Tag</span>
+              <span class="node-sub">13.56 MHz RF</span>
+            </div>
+            <div class="flow-arrow"><i class="fa-solid fa-angles-right"></i></div>
+
+            <div class="flow-node" id="node-reader">
+              <div class="node-icon"><i class="fa-solid fa-microchip"></i></div>
+              <span class="node-name">RC522 Node</span>
+              <span class="node-sub">SPI / Wiegand</span>
+            </div>
+            <div class="flow-arrow"><i class="fa-solid fa-angles-right"></i></div>
+
+            <div class="flow-node" id="node-router">
+              <div class="node-icon"><i class="fa-solid fa-route"></i></div>
+              <span class="node-name">Wi-Fi Gateway</span>
+              <span class="node-sub">802.11 / IPv4</span>
+            </div>
+            <div class="flow-arrow"><i class="fa-solid fa-angles-right"></i></div>
+
+            <div class="flow-node" id="node-server">
+              <div class="node-icon"><i class="fa-solid fa-server"></i></div>
+              <span class="node-name">LAN Server</span>
+              <span class="node-sub">HTTP 200 OK</span>
+            </div>
+          </div>
+
+          <!-- Network Transmission Log Console -->
+          <div class="console-log-box">
+            <div class="console-title-bar">
+              <span><i class="fa-solid fa-terminal"></i> Packet Payload Log (JSON/TCP)</span>
+              <button class="btn-clear-console" id="btn-clear-console" title="Clear log">Clear</button>
+            </div>
+            <div class="console-body" id="packet-console-output">
+              <div class="console-line text-muted">[SYSTEM BOOT] RFID Node initialized. Listening on 192.168.1.100:8080...</div>
+              <div class="console-line text-info">[NETWORKING] Socket opened: TCP port 8080. Ready for Tag swipe.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Attendance History Section -->
+    <section class="records-section" id="records-section">
+      <div class="section-card">
+        <!-- History Toolbar -->
+        <div class="records-toolbar">
+          <div class="toolbar-title">
+            <h2><i class="fa-solid fa-clock-rotate-left text-primary"></i> Attendance History</h2>
+            <p>Persistent logs saved in browser localStorage with duplicate swipe protection.</p>
+          </div>
+
+          <div class="toolbar-actions">
+            <!-- Search Input -->
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="search-history-input" placeholder="Search by Name, RFID ID, Date, or Status...">
+            </div>
+
+            <!-- Export to CSV Button -->
+            <button class="btn btn-secondary" id="btn-export-csv" title="Download Attendance as CSV Sheet">
+              <i class="fa-solid fa-file-arrow-down"></i> Export CSV
+            </button>
+
+            <!-- Clear Records Button with Confirmation -->
+            <button class="btn btn-danger-outline" id="btn-clear-records" title="Clear all saved attendance records">
+              <i class="fa-solid fa-trash-can"></i> Clear Records
+            </button>
+          </div>
+        </div>
+
+        <!-- Attendance History Table -->
+        <div class="table-responsive">
+          <table class="attendance-table" id="attendance-history-table">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>RFID ID</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <!-- Dynamically populated from localStorage by script.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State (Shown when history is empty or search has 0 results) -->
+        <div class="empty-state" id="history-empty-state" style="display: none;">
+          <div class="empty-icon"><i class="fa-regular fa-folder-open"></i></div>
+          <h4>No attendance history found</h4>
+          <p>Scan a student RFID card or enter an RFID ID such as <strong>STU1001</strong> to log attendance.</p>
+        </div>
+
+        <!-- Table Footer / Summary -->
+        <div class="table-footer">
+          <span class="footer-count" id="history-table-summary">Showing 0 attendance records</span>
+          <div class="legend-badges">
+            <span class="legend-item"><span class="dot-present"></span> Present</span>
+            <span class="legend-item"><i class="fa-solid fa-database text-primary"></i> Saved in LocalStorage</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Student Details Table Section -->
+    <section class="students-section" id="students-section">
+      <div class="section-card">
+        <div class="records-toolbar">
+          <div class="toolbar-title">
+            <h2><i class="fa-solid fa-users text-primary"></i> Student Details Table</h2>
+            <p>Master directory of enrolled students and assigned RFID IDs used for attendance validation.</p>
+          </div>
+
+          <div class="toolbar-actions">
+            <!-- Student Search Field -->
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="student-search-input" placeholder="Search by Student ID, Name, Dept, or RFID ID...">
+            </div>
+
+            <!-- Add Student Button -->
+            <button class="btn btn-primary" id="btn-add-student-dir">
+              <i class="fa-solid fa-user-plus"></i> Add Student
+            </button>
+          </div>
+        </div>
+
+        <!-- Student Details Table -->
+        <div class="table-responsive">
+          <table class="attendance-table" id="students-table">
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>RFID ID</th>
+                <th>Attendance Status</th>
+                <th>Quick Action</th>
+              </tr>
+            </thead>
+            <tbody id="students-tbody">
+              <!-- Populated dynamically by script.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State for Student Search -->
+        <div class="empty-state" id="students-empty-state" style="display: none;">
+          <div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>
+          <h4>No matching students found</h4>
+          <p>Try searching with another keyword or register a new student.</p>
+        </div>
+
+        <!-- Table Footer / Summary -->
+        <div class="table-footer">
+          <span class="footer-count" id="students-table-summary">Showing 3 of 3 students</span>
+          <div class="legend-badges">
+            <span class="legend-item"><span class="dot-present"></span> Present</span>
+            <span class="legend-item"><span class="dot-absent"></span> Absent</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Computer Networks Architecture & Concepts Section -->
+    <section class="network-section" id="network-section">
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <h2><i class="fa-solid fa-network-wired text-primary"></i> Computer Networks Concepts &amp; Architecture</h2>
+            <p>Theoretical and practical networking concepts modeled in this RFID Attendance Project.</p>
+          </div>
+          <span class="badge-cn">CN Curriculum PBL Guide</span>
+        </div>
+
+        <!-- Computer Networks Flow Diagram -->
+        <div class="cn-diagram-wrapper">
+          <div class="cn-diagram-title">
+            <i class="fa-solid fa-diagram-project"></i> Network Communication Flow Diagram
+          </div>
+          <div class="cn-diagram-flow">
+            <!-- Step 1: RFID ID -->
+            <div class="cn-diagram-node">
+              <div class="node-icon"><i class="fa-solid fa-id-card"></i></div>
+              <span class="node-label">RFID ID</span>
+              <span class="node-desc">13.56 MHz Card</span>
+            </div>
+            <div class="cn-diagram-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+
+            <!-- Step 2: Client -->
+            <div class="cn-diagram-node">
+              <div class="node-icon"><i class="fa-solid fa-microchip"></i></div>
+              <span class="node-label">Client</span>
+              <span class="node-desc">Reader / ESP32 Node</span>
+            </div>
+            <div class="cn-diagram-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+
+            <!-- Step 3: TCP/IP Network -->
+            <div class="cn-diagram-node">
+              <div class="node-icon"><i class="fa-solid fa-wifi"></i></div>
+              <span class="node-label">TCP/IP Network</span>
+              <span class="node-desc">LAN / Wi-Fi Subnet</span>
+            </div>
+            <div class="cn-diagram-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+
+            <!-- Step 4: Server -->
+            <div class="cn-diagram-node">
+              <div class="node-icon"><i class="fa-solid fa-server"></i></div>
+              <span class="node-label">Server</span>
+              <span class="node-desc">Port 8080 Listener</span>
+            </div>
+            <div class="cn-diagram-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+
+            <!-- Step 5: Database -->
+            <div class="cn-diagram-node">
+              <div class="node-icon"><i class="fa-solid fa-database"></i></div>
+              <span class="node-label">Database</span>
+              <span class="node-desc">Student Records</span>
+            </div>
+            <div class="cn-diagram-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+
+            <!-- Step 6: Result -->
+            <div class="cn-diagram-node">
+              <div class="node-icon"><i class="fa-solid fa-square-poll-vertical"></i></div>
+              <span class="node-label">Result</span>
+              <span class="node-desc">Success / Duplicate</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Five Core Computer Networks Concepts Grid -->
+        <div class="cn-concepts-grid">
+          <!-- 1. Client-Server Architecture -->
+          <div class="cn-concept-card">
+            <div class="cn-concept-header">
+              <div class="cn-concept-icon"><i class="fa-solid fa-arrows-split-up-and-left"></i></div>
+              <h4>Client-Server Architecture</h4>
+            </div>
+            <p>
+              A distributed application model that divides tasks between service providers (servers) and service requesters (clients). The client initiates contact, and the server continuously listens for and processes client requests.
+            </p>
+            <div class="cn-concept-example">
+              <strong>In this project:</strong> The RFID reader terminal acts as the <em>Client</em> sending card scan requests, while the central attendance host acts as the <em>Server</em> validating data and returning responses.
+            </div>
+          </div>
+
+          <!-- 2. TCP/IP -->
+          <div class="cn-concept-card">
+            <div class="cn-concept-header">
+              <div class="cn-concept-icon"><i class="fa-solid fa-shield-halved"></i></div>
+              <h4>TCP/IP Protocol</h4>
+            </div>
+            <p>
+              The Transmission Control Protocol / Internet Protocol suite. <strong>TCP</strong> provides reliable, connection-oriented data transfer via a 3-way handshake (SYN, SYN-ACK, ACK), ensuring zero packet loss. <strong>IP</strong> handles addressing and routing packets across the network.
+            </p>
+            <div class="cn-concept-example">
+              <strong>In this project:</strong> Guarantees that attendance scan packets are delivered reliably without corruption, loss, or packet duplication over the LAN.
+            </div>
+          </div>
+
+          <!-- 3. IP Address -->
+          <div class="cn-concept-card">
+            <div class="cn-concept-header">
+              <div class="cn-concept-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+              <h4>IP Address</h4>
+            </div>
+            <p>
+              A unique 32-bit numerical identifier (IPv4) assigned to every device participating in a computer network using the Internet Protocol for communication. It defines where a device resides on a subnet.
+            </p>
+            <div class="cn-concept-example">
+              <strong>In this project:</strong> The RFID Reader client is assigned IP <code>192.168.1.50</code>, and the Central Server is located at IP <code>192.168.1.100</code> on subnet <code>255.255.255.0</code>.
+            </div>
+          </div>
+
+          <!-- 4. Port Number -->
+          <div class="cn-concept-card">
+            <div class="cn-concept-header">
+              <div class="cn-concept-icon"><i class="fa-solid fa-door-open"></i></div>
+              <h4>Port Number</h4>
+            </div>
+            <p>
+              A 16-bit unsigned number (ranging from 0 to 65535) used by transport protocols (TCP/UDP) to identify specific running applications or network processes on a single host.
+            </p>
+            <div class="cn-concept-example">
+              <strong>In this project:</strong> The attendance backend service listens specifically on <strong>Port 8080</strong>, ensuring attendance packets are routed directly to the attendance daemon rather than web traffic (port 80/443).
+            </div>
+          </div>
+
+          <!-- 5. Socket Programming -->
+          <div class="cn-concept-card">
+            <div class="cn-concept-header">
+              <div class="cn-concept-icon"><i class="fa-solid fa-plug"></i></div>
+              <h4>Socket Programming</h4>
+            </div>
+            <p>
+              A socket is a bidirectional communication endpoint formed by combining an <strong>IP Address + Port Number</strong> (e.g. <code>192.168.1.100:8080</code>). Socket APIs allow programs to open connections, stream byte payloads, and exchange acknowledgments.
+            </p>
+            <div class="cn-concept-example">
+              <strong>In this project:</strong> The client creates a TCP socket to <code>192.168.1.100:8080</code>, serializes the RFID ID payload, transmits it, and reads the server's verification status response.
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Network Diagnostics & Socket Lab (Complex CN PBL Feature) -->
+        <div class="network-diagnostics-card" id="network-diagnostics">
+          <div class="diag-header">
+            <div class="diag-title">
+              <i class="fa-solid fa-terminal text-primary"></i>
+              <div>
+                <h3>Interactive Network Diagnostics &amp; Socket Suite</h3>
+                <p>Execute live ICMP ping tests, inspect TCP 3-way handshakes, and verify subnet configurations on the LAN.</p>
+              </div>
+            </div>
+            <div class="diag-tools">
+              <button class="btn btn-secondary btn-sm" id="btn-run-ping">
+                <i class="fa-solid fa-bolt"></i> Ping Server (ICMP)
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-run-handshake">
+                <i class="fa-solid fa-handshake"></i> TCP Handshake
+              </button>
+              <button class="btn btn-primary btn-sm" id="btn-open-packet-inspector">
+                <i class="fa-solid fa-layer-group"></i> Packet Inspector (OSI)
+              </button>
+            </div>
+          </div>
+
+          <!-- Interactive Diagnostic Output Console -->
+          <div class="diag-console-box">
+            <div class="diag-console-bar">
+              <span><i class="fa-solid fa-network-wired"></i> Diagnostic Output &bull; Target: <code>192.168.1.100:8080</code></span>
+              <span class="diag-status" id="diag-status-badge">READY</span>
+            </div>
+            <pre class="diag-output-text" id="diag-output-terminal">LAN Gateway 192.168.1.1 online.
+Central Attendance Host 192.168.1.100 listening on TCP Port 8080.
+Subnet: 192.168.1.0/24 | Netmask: 255.255.255.0 | Broadcast: 192.168.1.255
+Click "Ping Server (ICMP)", "TCP Handshake", or "Packet Inspector (OSI)" to run network tests.</pre>
+          </div>
+
+          <!-- Diagnostics Metrics Grid -->
+          <div class="diag-metrics-grid">
+            <div class="diag-metric-pill">
+              <span class="metric-name">Active Socket:</span>
+              <span class="metric-val" id="active-socket-val">192.168.1.50:49152 &rarr; 192.168.1.100:8080</span>
+            </div>
+            <div class="diag-metric-pill">
+              <span class="metric-name">Transport Protocol:</span>
+              <span class="metric-val">TCP (Transmission Control Protocol)</span>
+            </div>
+            <div class="diag-metric-pill">
+              <span class="metric-name">Frame Check Sequence:</span>
+              <span class="metric-val">CRC-16 / CCITT Verified</span>
+            </div>
+            <div class="diag-metric-pill">
+              <span class="metric-name">MTU Size:</span>
+              <span class="metric-val">1500 Bytes (Standard Ethernet)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal 1: Mark Attendance / Tap Card Modal -->
+  <div class="modal-backdrop" id="scan-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-id-card text-primary"></i>
+          <h3>RFID Attendance Scanner</h3>
+        </div>
+        <button class="btn-close-modal" id="close-scan-modal" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-scanner-display">
+          <div class="big-scanner-box" id="modal-scanner-box">
+            <div class="scan-light-beam" id="modal-scan-beam"></div>
+            <i class="fa-solid fa-wifi big-icon"></i>
+            <h4>Tap Card to Terminal</h4>
+            <p id="modal-reader-status">Awaiting 13.56MHz RFID Card Induction...</p>
+          </div>
+        </div>
+
+        <div class="modal-input-area">
+          <label for="modal-rfid-input">Enter RFID ID such as STU1001 or Select Sample ID Below:</label>
+          <div class="input-group">
+            <input type="text" id="modal-rfid-input" placeholder="e.g. STU1001" maxlength="20">
+            <button class="btn btn-primary" id="btn-modal-scan-submit"><i class="fa-solid fa-barcode"></i> Scan</button>
+          </div>
+        </div>
+
+        <div class="modal-demo-cards">
+          <span class="demo-title">Tap a Sample Student Card:</span>
+          <div class="modal-cards-list" id="modal-cards-list">
+            <!-- Populated by script.js -->
+          </div>
+        </div>
+
+        <!-- Live Modal Scan Result Display Box -->
+        <div class="scan-result-card" id="modal-scan-result-card" style="display: none; margin-top: 1rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Add New Student Modal -->
+  <div class="modal-backdrop" id="add-student-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-user-plus text-primary"></i>
+          <h3>Register New Student &amp; RFID Tag</h3>
+        </div>
+        <button class="btn-close-modal" id="close-add-modal" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="add-student-form" onsubmit="event.preventDefault(); handleAddStudentSubmit();">
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label for="new-student-id">Student ID *</label>
+              <input type="text" id="new-student-id" class="form-control" placeholder="e.g. STU004" required>
+            </div>
+            <div class="form-group col-6">
+              <label for="new-student-name">Full Name *</label>
+              <input type="text" id="new-student-name" class="form-control" placeholder="e.g. Aditi Sharma" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label for="new-student-dept">Department *</label>
+              <select id="new-student-dept" class="form-control" required>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Electronics & Communication">Electronics &amp; Communication</option>
+              </select>
+            </div>
+            <div class="form-group col-6">
+              <label for="new-student-rfid">RFID ID *</label>
+              <input type="text" id="new-student-rfid" class="form-control" placeholder="e.g. STU1004" required maxlength="15">
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-add">Cancel</button>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Student</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: OSI Layer Packet Frame Inspector (Wireshark Style) -->
+  <div class="modal-backdrop" id="packet-inspector-modal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-layer-group text-primary"></i>
+          <h3>OSI Layer Packet Frame Dissector (Wireshark-Style Inspection)</h3>
+        </div>
+        <button class="btn-close-modal" id="close-inspector-modal" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="inspector-summary-bar">
+          <div class="insp-stat">
+            <span class="insp-label">Frame Number:</span>
+            <span class="insp-val" id="insp-frame-num">#1042</span>
+          </div>
+          <div class="insp-stat">
+            <span class="insp-label">Arrival Time:</span>
+            <span class="insp-val" id="insp-arrival-time">Live Packet</span>
+          </div>
+          <div class="insp-stat">
+            <span class="insp-label">Packet Length:</span>
+            <span class="insp-val">128 Bytes on wire</span>
+          </div>
+          <div class="insp-stat">
+            <span class="insp-label">Checksum:</span>
+            <span class="insp-val text-success" id="insp-crc-val">CRC-16: 0xE8A2 [Verified]</span>
+          </div>
+        </div>
+
+        <!-- OSI Layer Dissection Tree -->
+        <div class="packet-dissector-tree">
+          <!-- Layer 2: Data Link Layer -->
+          <div class="dissector-layer">
+            <div class="layer-header" onclick="toggleLayer('layer-2-body')">
+              <i class="fa-solid fa-chevron-down layer-arrow"></i>
+              <span class="layer-badge l2">Layer 2</span>
+              <strong>Ethernet II Frame</strong>
+              <span class="layer-meta">Src: <code>00:1A:2B:6F:89:C1</code> &rarr; Dst: <code>A4:C3:F0:89:12:34</code> (Gateway)</span>
+            </div>
+            <div class="layer-body" id="layer-2-body">
+              <div class="field-row"><span>Destination MAC:</span> <code>A4:C3:F0:89:12:34</code> (TP-Link Gateway Router)</div>
+              <div class="field-row"><span>Source MAC:</span> <code>00:1A:2B:6F:89:C1</code> (ESP32 RFID Reader Node)</div>
+              <div class="field-row"><span>EtherType:</span> <code>0x0800</code> (IPv4 Internet Protocol)</div>
+              <div class="field-row"><span>Frame Check Sequence (FCS):</span> <code>0x38F02B19</code> (Valid CRC32)</div>
+            </div>
+          </div>
+
+          <!-- Layer 3: Network Layer -->
+          <div class="dissector-layer">
+            <div class="layer-header" onclick="toggleLayer('layer-3-body')">
+              <i class="fa-solid fa-chevron-down layer-arrow"></i>
+              <span class="layer-badge l3">Layer 3</span>
+              <strong>Internet Protocol Version 4 (IPv4)</strong>
+              <span class="layer-meta">Src: <code>192.168.1.50</code> &rarr; Dst: <code>192.168.1.100</code></span>
+            </div>
+            <div class="layer-body" id="layer-3-body">
+              <div class="field-row"><span>Version:</span> <code>4</code> | <span>Header Length:</span> <code>20 Bytes (IHL: 5)</code></div>
+              <div class="field-row"><span>Differentiated Services Field:</span> <code>0x00</code> (Default Standard QoS)</div>
+              <div class="field-row"><span>Total Length:</span> <code>108 Bytes</code> | <span>Identification:</span> <code>0x49FA (18938)</code></div>
+              <div class="field-row"><span>Flags:</span> <code>0x02</code> (Don't Fragment [DF])</div>
+              <div class="field-row"><span>Time to Live (TTL):</span> <code>64 Hops</code></div>
+              <div class="field-row"><span>Transport Protocol:</span> <code>TCP (6)</code></div>
+              <div class="field-row"><span>Header Checksum:</span> <code>0x74B2</code> [Correct]</div>
+              <div class="field-row"><span>Source IP Address:</span> <code>192.168.1.50</code> (RFID Terminal Client)</div>
+              <div class="field-row"><span>Destination IP Address:</span> <code>192.168.1.100</code> (Central Attendance Server)</div>
+            </div>
+          </div>
+
+          <!-- Layer 4: Transport Layer -->
+          <div class="dissector-layer">
+            <div class="layer-header" onclick="toggleLayer('layer-4-body')">
+              <i class="fa-solid fa-chevron-down layer-arrow"></i>
+              <span class="layer-badge l4">Layer 4</span>
+              <strong>Transmission Control Protocol (TCP)</strong>
+              <span class="layer-meta">Src Port: <code>49152</code> &rarr; Dst Port: <code>8080</code> [PSH, ACK]</span>
+            </div>
+            <div class="layer-body" id="layer-4-body">
+              <div class="field-row"><span>Source Port:</span> <code>49152</code> (Ephemeral Client Socket Port)</div>
+              <div class="field-row"><span>Destination Port:</span> <code>8080</code> (HTTP Attendance Daemon Service)</div>
+              <div class="field-row"><span>Sequence Number:</span> <code>1402941</code> (Relative seq: 1)</div>
+              <div class="field-row"><span>Acknowledgment Number:</span> <code>890123</code> (Relative ack: 1)</div>
+              <div class="field-row"><span>Flags:</span> <code>0x018 [PSH, ACK]</code> (Push Data &amp; Acknowledgment)</div>
+              <div class="field-row"><span>Window Size:</span> <code>64240 Bytes</code> (Calculated buffer window)</div>
+              <div class="field-row"><span>TCP Checksum:</span> <code>0x9C1F</code> [Verified Connection-Oriented Integrity]</div>
+            </div>
+          </div>
+
+          <!-- Layer 7: Application Layer -->
+          <div class="dissector-layer">
+            <div class="layer-header" onclick="toggleLayer('layer-7-body')">
+              <i class="fa-solid fa-chevron-down layer-arrow"></i>
+              <span class="layer-badge l7">Layer 7</span>
+              <strong>Application Layer: HTTP/1.1 POST Payload (RFID JSON Data)</strong>
+              <span class="layer-meta">Payload Length: 64 Bytes</span>
+            </div>
+            <div class="layer-body" id="layer-7-body">
+              <div class="field-row"><span>HTTP Method:</span> <code>POST /api/v1/attendance HTTP/1.1</code></div>
+              <div class="field-row"><span>Host:</span> <code>192.168.1.100:8080</code> | <span>Content-Type:</span> <code>application/json</code></div>
+              <div class="field-row">
+                <span>Decoded Payload:</span>
+                <pre class="json-payload-view" id="insp-json-payload">{
+  "event": "RFID_CARD_DETECTED",
+  "readerId": "RC522_NODE_01",
+  "rfidTag": "STU1001",
+  "frequency": "13.56 MHz HF",
+  "rssi": "-44 dBm",
+  "crc16": "0xE8A2",
+  "timestamp": "2026-10-15T15:10:00Z"
+}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Raw Hex & ASCII Stream Dump -->
+        <div class="hex-dump-container">
+          <div class="hex-dump-title">
+            <i class="fa-solid fa-binary"></i> Raw Hexadecimal Byte Packet Stream (Offset 0x0000 - 0x003F)
+          </div>
+          <pre class="hex-dump-code" id="insp-hex-dump">0000  00 1a 2b 6f 89 c1 a4 c3  f0 89 12 34 08 00 45 00  ..+o.... ...4..E.
+0010  00 6c 49 fa 40 00 40 06  74 b2 c0 a8 01 32 c0 a8  .lI.@.@. t....2..
+0020  01 64 c0 00 1f 90 00 15  68 3d 00 0d 95 0b 50 18  .d...... h=....P.
+0030  fa f0 9c 1f 00 00 7b 22  72 66 69 64 54 61 67 22  ......{" rfidTag"</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <strong>RFID-Based Attendance System</strong> &bull; Computer Networks Project-Based Learning (PBL)
+      </div>
+      <div class="footer-center">
+        <span class="designer-badge"><i class="fa-solid fa-code"></i> DESIGNED BY UDAYKUMARGOURIDEVI</span>
+      </div>
+      <div class="footer-right">
+        <span class="designer-caps">DESIGNED BY UDAYKUMARGOURIDEVI</span>
+        <span>&bull;</span>
+        <span><i class="fa-solid fa-circle-check text-success"></i> HTML5 / CSS3 / Vanilla JS</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Project Script -->
+  <script src="script.js"></script>
+</body>
+</html>
